@@ -86,7 +86,7 @@ def selection(population, fitnesses, crowding_distances, k=3):
     # Randomly select k individuals and return the best one considering both fitness and crowding distance
     selected = random.choices(list(range(len(population))), k=k)
     selected_fitnesses = [fitnesses[i] for i in selected]
-    best_index = selected[np.argmin(selected_fitnesses)]
+    best_index = selected[np.argmax(selected_fitnesses)]
    
     # In case of ties in fitness, use crowding distance to decide
     best_fitness = fitnesses[best_index]
@@ -144,8 +144,6 @@ def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=30, max_gene
         current_average_fitness = np.mean(fitnesses)
 
         current_best_solution = population[fitnesses.index(current_best_fitness)]
-        print("current best solution\n")
-        print(current_best_solution)
         
         # Record fitness values for the current generation
         best_fitness_over_gens.append(current_best_fitness)
@@ -158,8 +156,6 @@ def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=30, max_gene
             print("best fitness\n")
             print(best_fitness)
             best_solution = current_best_solution
-            print("new pop\n")
-            print(best_solution)
        
         # Early stopping if a perfect solution is found
         if best_fitness == total_lines // 2:
@@ -173,7 +169,7 @@ file_path = r"C:\Users\Admin\Downloads\GA_input.txt"
 men_prefs, women_prefs, total_lines = read_prefs(file_path)
 print("Men's Preferences:")
 print(men_prefs)
-print("\nWomen's Preferences:")
+print("Women's Preferences:")
 print(women_prefs)
 
 best_solution, best_fitness, best_fitness_over_gens, worst_fitness_over_gens, average_fitness_over_gens = genetic_algorithm(men_prefs, women_prefs, total_lines)
