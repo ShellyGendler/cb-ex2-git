@@ -14,7 +14,10 @@ def read_prefs(file_path):
     # Initialize preferences for men and women
     men_prefs = []
     women_prefs = []
-    
+    array_of_neg_ones = np.full(total_lines // 2, -1)
+    # initialize the 0th preference to be -1
+    men_prefs.append(array_of_neg_ones)
+    women_prefs.append(array_of_neg_ones)
     # Split lines into men's and women's preferences
     for i in range(midpoint):
         prefs = list(map(int, lines[i].strip().split()))
@@ -27,45 +30,55 @@ def read_prefs(file_path):
     return np.array(men_prefs), np.array(women_prefs), total_lines
 
 def fitness(solution, men_prefs, women_prefs, total_lines):
+    women_prefs_array = np.array(women_prefs)
     blocking_pairs = 0
     n = len(solution)
-    
+    print(f'n is {n}')
     # Iterate over each man in the solution
-    for man in range(n):
-        # array of prefs of the current man
+    for man in range(1, n):
+        # Get preferences of the current man
         current_man_pref = men_prefs[man]
-        # extract his wife
+        # array convertion
+        current_man_pref_array = np.array(current_man_pref)
+        # Get his wife (woman assigned to him in the solution)
         woman = solution[man]
-        # extract his wife's score
-        woman_index = current_man_pref.index(woman)
-        # go over the women he prefers upon his wife
-        for index_other_woman in range(0, woman_index):
-            # extract the actual other woman
-            other_woman = current_man_pref[index_other_woman]
-            other_woman_pref = women_prefs[other_woman]
-            man_index = other_woman_pref.index(man)
-            other_womans_man = solution.index(other_woman)
-            index_other_womans_man = women_prefs.index(other_womans_man)
-            if (index_other_womans_man > man):
-                blocking_pairs += 1
-                break 
-            print(blocking_pairs)
 
-        # # Check if the current pairing (man, woman) is a blocking pair
-        # for other_man in range(n):
-        #     if other_man != man:
-        #         other_woman = solution[other_man]
-        #         if (men_pref[])
-                # # Check conditions for blocking pair
-                # if (np.where(men_prefs[man] == woman + 1)[0][0] > np.where(men_prefs[man] == other_woman + 1)[0][0] and
-                #     np.where(women_prefs[woman] == man + 1)[0][0] > np.where(women_prefs[woman] == other_man + 1)[0][0]):
-                #     blocking_pairs += 1
-                #     print(f'blocking pairs {blocking_pairs}')
+        print("np.where(current_man_pref_array == woman)[0]")
+        print(np.where(current_man_pref_array == woman)[0])
+        print("np.where(current_man_pref_array == woman)[0][0]")
+        print(np.where(current_man_pref_array == woman)[0][0])
+        # Find the index of his wife in his preferences
+        woman_index = np.where(current_man_pref_array == woman)[0][0]
+
+        print(f'current man pref array')
+        print(current_man_pref_array)        
+        # Iterate over the women he prefers more than his current wife
+        for index_other_woman in range(woman_index):
+            # Extract the other woman he prefers more than his current wife
+            other_woman = current_man_pref_array[index_other_woman]
+            
+            # Get the preference list of the other woman
+            other_woman_prefs = women_prefs[other_woman]
+            other_woman_prefs_array = np.array(other_woman_prefs)
+
+
+            man_index_in_other_woman_prefs = np.where(other_woman_prefs_array == man)[0][0]
+            
+            # Find the man assigned to the other woman in the current solution
+            other_womans_man = np.where(solution == other_woman)[0][0]
+            # Find the index of the other woman's man in the other woman's preferences
+            index_other_womans_man = np.where(women_prefs_array[other_woman] == other_womans_man)[0][0]
+            
+            # Check if the current pair (man, woman) forms a blocking pair
+            if (man_index_in_other_woman_prefs < index_other_womans_man):
+                blocking_pairs += 1
+                break  # No need to check further once a blocking pair is found
     
     # Calculate number of "happy" couples
     happy_couples = total_lines // 2 - blocking_pairs
     
     return happy_couples
+
 
 
 def order_crossover(parent1, parent2):
@@ -130,7 +143,7 @@ def calculate_crowding_distance(fitnesses):
 
 def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=30, max_generations=600, mutation_rate=0.1):
     # Initialize the population with random solutions
-    population = [random.sample(range(total_lines // 2), total_lines // 2) for _ in range(pop_size)]
+    population = [[-1] + random.sample(range(1, total_lines // 2 + 1), total_lines // 2) for _ in range(pop_size)]
     best_solution = None
     best_fitness = 0
     
