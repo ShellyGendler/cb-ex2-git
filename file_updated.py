@@ -1,3 +1,4 @@
+import sys
 import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,35 +29,38 @@ def read_prefs(file_path):
 
 def fitness(solution, men_prefs, women_prefs, total_lines):
     women_prefs_list = women_prefs.tolist()
-    # solution_list = solution.tolist()
     blocking_pairs = 0
     n = len(solution)
     
     # Iterate over each man in the solution
-    for man in range(1,n-1):
-        # array of prefs of the current man
+    for man in range(1, n-1):
+        # Array of preferences of the current man
         current_man_pref = men_prefs[man-1]
         current_man_pref_list = current_man_pref.tolist()
-        # extract his wife
+        
+        # Extract his wife
         woman = solution[man-1]
-        # extract his wife's score
+        
+        # Extract his wife's score
         woman_index = current_man_pref_list.index(woman)
-        # go over the women he prefers upon his wife
+        
+        # Go over the women he prefers upon his wife
         for index_other_woman in range(0, woman_index):
-            # extract the actual other woman
+            # Extract the actual other woman
             other_woman = current_man_pref[index_other_woman]
             other_woman_pref = women_prefs_list[other_woman-1]
+            
+            # Check if the other woman's man index is greater
             man_index = other_woman_pref.index(man)
-            other_womans_man = solution.index(other_woman)+1
+            other_womans_man = solution.index(other_woman) + 1
             index_other_womans_man = other_woman_pref.index(other_womans_man)
-            if (index_other_womans_man > man_index):
+            
+            if index_other_womans_man > man_index:
                 blocking_pairs += 1
                 break 
     
     happy_couples = total_lines // 2 - blocking_pairs
-    
     return happy_couples
-
 
 def order_crossover(parent1, parent2):
     # Perform order crossover on two parent solutions
@@ -82,11 +86,9 @@ def order_crossover(parent1, parent2):
 
 def mutation(solution):
     # Perform mutation with a given probability
-     
-        # Select 2 positions to swap
-        a, b = random.sample(range(len(solution)), 2)
-        solution[a], solution[b] = solution[b], solution[a]
-        return solution
+    a, b = random.sample(range(len(solution)), 2)
+    solution[a], solution[b] = solution[b], solution[a]
+    return solution
 
 def selection(population, fitnesses, crowding_distances, k=3):
     # Randomly select k individuals and return the best one considering both fitness and crowding distance
@@ -121,7 +123,7 @@ def calculate_crowding_distance(fitnesses):
 def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=20, max_generations=900):
     base_sequence = list(range(1, (total_lines // 2) + 1))
         
-        # Initialize the population with shuffled solutions
+    # Initialize the population with shuffled solutions
     population = [random.sample(base_sequence, len(base_sequence)) for _ in range(pop_size)]
     best_solution = None
     best_fitness = 0
@@ -131,11 +133,8 @@ def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=20, max_gene
     worst_fitness_over_gens = []
     average_fitness_over_gens = []
     
-    generations_count = 0
     # Iterate through generations
     for generation in range(max_generations):
-        generations_count += 1
-        print(f'generations count {generations_count}')
         fitnesses = [fitness(ind, men_prefs, women_prefs, total_lines) for ind in population]
         new_population = []
         crowding_distance = calculate_crowding_distance(fitnesses)
@@ -184,24 +183,15 @@ def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=20, max_gene
    
     return best_solution, best_fitness, best_fitness_over_gens, worst_fitness_over_gens, average_fitness_over_gens
 
-# Main code to run the genetic algorithm
-file_path = r"C:\Users\Admin\Downloads\GA_input.txt"
-men_prefs, women_prefs, total_lines = read_prefs(file_path)
- 
-
-best_solution, best_fitness, best_fitness_over_gens, worst_fitness_over_gens, average_fitness_over_gens = genetic_algorithm(men_prefs, women_prefs, total_lines)
-print(f"Best Solution: {best_solution}")
-print(f"Best Fitness: {best_fitness}")
-
-# Plotting the fitness values over generations
-plt.figure(figsize=(12, 6))
-plt.plot(best_fitness_over_gens, label='Best Fitness')
-plt.plot(worst_fitness_over_gens, label='Worst Fitness')
-plt.plot(average_fitness_over_gens, label='Average Fitness')
-plt.xlabel('Generations')
-plt.ylabel('Fitness Value')
-plt.title('Fitness Value over Generations')
-plt.legend()
-plt.grid(True)
-plt.show()
-exit(0)
+if __name__ == "__main__":
+    # Check if file_path argument is provided
+    if len(sys.argv) != 2:
+        print("Usage: python script.py <file_path>")
+        sys.exit(1)
+    
+    file_path = sys.argv[1]
+    men_prefs, women_prefs, total_lines = read_prefs(file_path)
+    
+    best_solution, best_fitness, best_fitness_over_gens, worst_fitness_over_gens, average_fitness_over_gens = genetic_algorithm(men_prefs, women_prefs, total_lines)
+    print(f"Best Solution: {best_solution}")
+    print(f"Best Fitness: {best_fitness}")
