@@ -14,10 +14,7 @@ def read_prefs(file_path):
     # Initialize preferences for men and women
     men_prefs = []
     women_prefs = []
-    array_of_neg_ones = np.full(total_lines // 2, -1)
-    # initialize the 0th preference to be -1
-    men_prefs.append(array_of_neg_ones)
-    women_prefs.append(array_of_neg_ones)
+    
     # Split lines into men's and women's preferences
     for i in range(midpoint):
         prefs = list(map(int, lines[i].strip().split()))
@@ -30,55 +27,35 @@ def read_prefs(file_path):
     return np.array(men_prefs), np.array(women_prefs), total_lines
 
 def fitness(solution, men_prefs, women_prefs, total_lines):
-    women_prefs_array = np.array(women_prefs)
+    women_prefs_list = women_prefs.tolist()
+    # solution_list = solution.tolist()
     blocking_pairs = 0
     n = len(solution)
-    print(f'n is {n}')
-    # Iterate over each man in the solution
-    for man in range(1, n):
-        # Get preferences of the current man
-        current_man_pref = men_prefs[man]
-        # array convertion
-        current_man_pref_array = np.array(current_man_pref)
-        # Get his wife (woman assigned to him in the solution)
-        woman = solution[man]
-
-        print("np.where(current_man_pref_array == woman)[0]")
-        print(np.where(current_man_pref_array == woman)[0])
-        print("np.where(current_man_pref_array == woman)[0][0]")
-        print(np.where(current_man_pref_array == woman)[0][0])
-        # Find the index of his wife in his preferences
-        woman_index = np.where(current_man_pref_array == woman)[0][0]
-
-        print(f'current man pref array')
-        print(current_man_pref_array)        
-        # Iterate over the women he prefers more than his current wife
-        for index_other_woman in range(woman_index):
-            # Extract the other woman he prefers more than his current wife
-            other_woman = current_man_pref_array[index_other_woman]
-            
-            # Get the preference list of the other woman
-            other_woman_prefs = women_prefs[other_woman]
-            other_woman_prefs_array = np.array(other_woman_prefs)
-
-
-            man_index_in_other_woman_prefs = np.where(other_woman_prefs_array == man)[0][0]
-            
-            # Find the man assigned to the other woman in the current solution
-            other_womans_man = np.where(solution == other_woman)[0][0]
-            # Find the index of the other woman's man in the other woman's preferences
-            index_other_womans_man = np.where(women_prefs_array[other_woman] == other_womans_man)[0][0]
-            
-            # Check if the current pair (man, woman) forms a blocking pair
-            if (man_index_in_other_woman_prefs < index_other_womans_man):
-                blocking_pairs += 1
-                break  # No need to check further once a blocking pair is found
     
-    # Calculate number of "happy" couples
+    # Iterate over each man in the solution
+    for man in range(1,n-1):
+        # array of prefs of the current man
+        current_man_pref = men_prefs[man-1]
+        current_man_pref_list = current_man_pref.tolist()
+        # extract his wife
+        woman = solution[man-1]
+        # extract his wife's score
+        woman_index = current_man_pref_list.index(woman)
+        # go over the women he prefers upon his wife
+        for index_other_woman in range(0, woman_index):
+            # extract the actual other woman
+            other_woman = current_man_pref[index_other_woman]
+            other_woman_pref = women_prefs_list[other_woman-1]
+            man_index = other_woman_pref.index(man)
+            other_womans_man = solution.index(other_woman)+1
+            index_other_womans_man = other_woman_pref.index(other_womans_man)
+            if (index_other_womans_man > man_index):
+                blocking_pairs += 1
+                break 
+    
     happy_couples = total_lines // 2 - blocking_pairs
     
     return happy_couples
-
 
 
 def order_crossover(parent1, parent2):
@@ -103,13 +80,13 @@ def order_crossover(parent1, parent2):
     
     return child1, child2
 
-def mutation(solution, mutation_rate=0.1):
+def mutation(solution):
     # Perform mutation with a given probability
-    if random.random() < mutation_rate:
+     
         # Select 2 positions to swap
         a, b = random.sample(range(len(solution)), 2)
         solution[a], solution[b] = solution[b], solution[a]
-    return solution
+        return solution
 
 def selection(population, fitnesses, crowding_distances, k=3):
     # Randomly select k individuals and return the best one considering both fitness and crowding distance
@@ -141,9 +118,11 @@ def calculate_crowding_distance(fitnesses):
    
     return crowding_distances
 
-def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=30, max_generations=600, mutation_rate=0.1):
-    # Initialize the population with random solutions
-    population = [[-1] + random.sample(range(1, total_lines // 2 + 1), total_lines // 2) for _ in range(pop_size)]
+def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=20, max_generations=900):
+    base_sequence = list(range(1, (total_lines // 2) + 1))
+        
+        # Initialize the population with shuffled solutions
+    population = [random.sample(base_sequence, len(base_sequence)) for _ in range(pop_size)]
     best_solution = None
     best_fitness = 0
     
@@ -151,21 +130,35 @@ def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=30, max_gene
     best_fitness_over_gens = []
     worst_fitness_over_gens = []
     average_fitness_over_gens = []
-   
+    
+    generations_count = 0
     # Iterate through generations
     for generation in range(max_generations):
+        generations_count += 1
+        print(f'generations count {generations_count}')
         fitnesses = [fitness(ind, men_prefs, women_prefs, total_lines) for ind in population]
         new_population = []
         crowding_distance = calculate_crowding_distance(fitnesses)
         
         # Generate new population through crossover and mutation
         for _ in range(pop_size // 2):
-            parent1 = selection(population, fitnesses, crowding_distance)
-            parent2 = selection(population, fitnesses, crowding_distance)
-            child1, child2 = order_crossover(parent1, parent2)
-            child1 = mutation(child1, mutation_rate)
-            child2 = mutation(child2, mutation_rate)
-            new_population.extend([child1, child2])
+            # choose randomly
+            toss = random.choices([0, 1], weights=[0.8, 0.2])[0]
+            # choose the best fitness 
+            if toss == 0:
+                parent1 = selection(population, fitnesses, crowding_distance)
+                parent2 = selection(population, fitnesses, crowding_distance)
+                child1 = parent1
+                child2 = parent2
+                new_population.extend([child1, child2])
+            else:
+                # choose two parents randomly and create mutations and crossover
+                parent1 = random.choice(population)
+                parent2 = random.choice(population)
+                child1, child2 = order_crossover(parent1, parent2)
+                child1 = mutation(child1)
+                child2 = mutation(child2)
+                new_population.extend([child1, child2])
        
         population = new_population
         current_best_fitness = max(fitnesses)
@@ -180,15 +173,13 @@ def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=30, max_gene
         average_fitness_over_gens.append(current_average_fitness)
        
         # Update the best solution found
-        print(f'current best fitness {best_fitness}')
         if current_best_fitness > best_fitness:
             best_fitness = current_best_fitness
             best_solution = current_best_solution
-            print(f"Generation {generation}: Found new best fitness = {best_fitness}")
+         
        
         # Early stopping if a perfect solution is found
         if best_fitness == total_lines // 2:
-            print(f"Generation {generation}: Found perfect solution, stopping early.")
             break
    
     return best_solution, best_fitness, best_fitness_over_gens, worst_fitness_over_gens, average_fitness_over_gens
@@ -196,10 +187,7 @@ def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=30, max_gene
 # Main code to run the genetic algorithm
 file_path = r"C:\Users\Admin\Downloads\GA_input.txt"
 men_prefs, women_prefs, total_lines = read_prefs(file_path)
-print("Men's Preferences:")
-print(men_prefs)
-print("Women's Preferences:")
-print(women_prefs)
+ 
 
 best_solution, best_fitness, best_fitness_over_gens, worst_fitness_over_gens, average_fitness_over_gens = genetic_algorithm(men_prefs, women_prefs, total_lines)
 print(f"Best Solution: {best_solution}")
@@ -216,3 +204,4 @@ plt.title('Fitness Value over Generations')
 plt.legend()
 plt.grid(True)
 plt.show()
+exit(0)
