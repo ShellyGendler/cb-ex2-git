@@ -185,13 +185,27 @@ def genetic_algorithm(men_prefs, women_prefs, total_lines, pop_size=20, max_gene
 
 if __name__ == "__main__":
     # Check if file_path argument is provided
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <file_path>")
-        sys.exit(1)
+    # if len(sys.argv) != 2:
+    #     print("Usage: python script.py <file_path>")
+    #     sys.exit(1)
     
-    file_path = sys.argv[1]
+    # file_path = sys.argv[1]
+    file_path = "./GA_input.txt"
     men_prefs, women_prefs, total_lines = read_prefs(file_path)
     
     best_solution, best_fitness, best_fitness_over_gens, worst_fitness_over_gens, average_fitness_over_gens = genetic_algorithm(men_prefs, women_prefs, total_lines)
     print(f"Best Solution: {best_solution}")
     print(f"Best Fitness: {best_fitness}")
+
+    # Plotting the fitness values over generations
+    plt.figure(figsize=(12, 6))
+    plt.plot(best_fitness_over_gens, label='Best Fitness')
+    plt.plot(worst_fitness_over_gens, label='Worst Fitness')
+    plt.plot(average_fitness_over_gens, label='Average Fitness')
+    plt.xlabel('Generations')
+    plt.ylabel('Fitness Value')
+    plt.title('Fitness Value over Generations')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    input()
